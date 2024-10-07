@@ -1,0 +1,53 @@
+import tensorflow as tf
+import keras
+from keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten
+from keras.datasets import cifar10
+from tensorflow.keras.optimizers import SGD
+import matplotlib.pyplot as plt
+import numpy as np
+import random
+
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+x_train = x_train / 255
+x_test = x_test / 255
+
+#convert labels to one-hot encoding
+y_train = keras.utils.to_categorical(y_train, 10)
+y_test = keras.utils.to_categorical(y_test, 10)
+
+class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+
+# Define the model
+model = Sequential([
+    Flatten(input_shape=(32,32,3)),
+    Dense(128, activation='relu'),
+    Dense(64, activation='relu'),
+    Dense(10, activation='softmax')
+])
+
+
+model.compile(optimizer = SGD(), loss = 'categorical_crossentropy', metrics = ["accuracy"])
+history=model.fit(x_train, y_train, epochs = 20, batch_size=32, validation_data=(x_test, y_test))
+
+test_loss, test_acc = model.evaluate(x_test, y_test)
+print("Loss = %.3f" % test_loss)
+print("Accuracy = %.3f" % test_acc)
+
+#plot one testing image
+n=random.randint(0, len(x_test) -1)
+plt.figure(figsize=(1,1))
+plt.imshow(x_test[n])
+plt.title(f'Test Image: {class_names[np.argmax(y_test[n])]}')
+plt.axis('off')
+plt.show()
+
+#plt.subplot(1,2,1)
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('Model Accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Validation'], loc='best')
+
+#for printing loss just replace each acuuracy with loss word

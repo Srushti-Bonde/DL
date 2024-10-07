@@ -1,0 +1,101 @@
+import tensorflow as tf
+from tensorflow.keras import layers, models
+import matplotlib.pyplot as plt
+import numpy as np
+
+# Load the Fashion MNIST dataset
+(train_images, train_labels), (test_images, test_labels) = tf.keras.datasets.fashion_mnist.load_data()
+
+# Normalize the pixel values to be between 0 and 1
+train_images = train_images / 255.0
+test_images = test_images / 255.0
+
+# Reshape data for CNN
+train_images = train_images.reshape((train_images.shape[0], 28, 28, 1))
+test_images = test_images.reshape((test_images.shape[0], 28, 28, 1))
+
+model = models.Sequential()
+
+# First convolutional layer
+model.add(layers.Conv2D(32, (3, 3), activation='relu', input_shape=(28, 28, 1)))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.BatchNormalization())
+
+# Second convolutional layer
+model.add(layers.Conv2D(64, (3, 3), activation='relu'))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.BatchNormalization())
+
+# Third convolutional layer
+model.add(layers.Conv2D(128, (3, 3), activation='relu'))
+model.add(layers.MaxPooling2D((2, 2)))
+model.add(layers.BatchNormalization())
+
+# Flatten the output and add a fully connected layer
+model.add(layers.Flatten())
+model.add(layers.Dense(128, activation='relu'))
+model.add(layers.Dropout(0.5))  # Regularization to avoid overfitting
+
+# Output layer with 10 classes (for the 10 clothing categories)
+model.add(layers.Dense(10, activation='softmax'))
+
+model.compile(optimizer='adam',
+              loss='sparse_categorical_crossentropy',
+              metrics=['accuracy'])
+
+history = model.fit(train_images, train_labels, epochs=10, 
+                    validation_data=(test_images, test_labels))
+
+test_loss, test_acc = model.evaluate(test_images, test_labels)
+print('Test accuracy:', test_acc)
+
+# Plot training & validation accuracy
+plt.plot(history.history['accuracy'], label='accuracy')
+plt.plot(history.history['val_accuracy'], label = 'val_accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.ylim([0.5, 1])
+plt.legend(loc='lower right')
+plt.show()
+
+# Define class names for Fashion MNIST dataset
+class_names = ['T-shirt/top', 'Trouser', 'Pullover', 'Dress', 'Coat', 'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
+
+# Function to plot 10 random images with their predictions
+def plot_random_images_and_classify(model, images, labels):
+    # Select 10 random indices
+    random_indices = np.random.choice(images.shape[0], 10, replace=False)
+    
+    plt.figure(figsize=(10, 10))
+    
+    for i, idx in enumerate(random_indices):
+        # Select the image and the corresponding label
+        img = images[idx]
+        true_label = labels[idx]
+        
+        # Reshape and expand dimensions for prediction
+        img_reshaped = np.expand_dims(img, axis=0)
+        
+        # Predict the class of the image
+        prediction = model.predict(img_reshaped)
+        predicted_label = np.argmax(prediction)
+        
+        # Plot the image
+        plt.subplot(5, 5, i+1)
+        plt.xticks([])
+        plt.yticks([])
+        plt.grid(False)
+        
+        # Plot the image in grayscale
+        plt.imshow(img.squeeze(), cmap=plt.cm.binary)
+        
+        # Set the title: Predicted label vs True label
+        plt.title(f"Predicted: {class_names[predicted_label]}\nTrue: {class_names[true_label]}", 
+                  color='green' if predicted_label == true_label else 'red')
+
+    plt.tight_layout()
+    plt.show()
+
+# Test the function with the test dataset
+plot_random_images_and_classify(model, test_images, test_labels)
+

@@ -1,0 +1,75 @@
+    from tensorflow.keras.models import Model
+    from tensorflow.keras.layers import Dense, Flatten, Conv2D, MaxPooling2D
+    from tensorflow.keras.applications import VGG16
+    from tensorflow.keras.preprocessing.image import ImageDataGenerator
+    from tensorflow.keras.optimizers import Adam
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import cv2
+
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(224, 224, 3))
+
+
+for layer in base_model.layers:
+    layer.trainable = False
+
+x=Flatten()(base_model.output)
+x=Dense(1024,activation='relu')(x)
+# x=Dense(1024,activation='relu')(x)
+# x=Dense(512,activation='relu')(x)
+output=Dense(2,activation='softmax')(x)
+
+model=Model(inputs=base_model.input,outputs=output)
+
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+train_datagen=ImageDataGenerator(rescale=1./255,shear_range=0.2,zoom_range=0.2,horizontal_flip=True)
+test_datagen=ImageDataGenerator(rescale=1./255)
+
+training_set = train_datagen.flow_from_directory(r'C:\Users\bprat\OneDrive\Desktop\DL\archive\animal\Train', target_size=(224, 224), batch_size=32, class_mode='categorical')
+test_set = test_datagen.flow_from_directory(r'C:\Users\bprat\OneDrive\Desktop\DL\archive\animal\val', target_size=(224, 224), batch_size=32, class_mode='categorical')
+
+
+model.compile(optimizer=Adam(learning_rate=0.001),loss='categorical_crossentropy',metrics=['accuracy'])
+model.fit(training_set,epochs=1,validation_data=test_set)
+
+for layer in base_model.layers:
+    layer.trainable=True
+
+model.compile(optimizer=Adam(learning_rate=0.0001),loss='categorical_crossentropy',metrics=['accuracy'])
+model.fit(training_set,epochs=1,validation_data=test_set)
+
+from tensorflow.keras.preprocessing import image
+img=image.load_img(r'C:\Users\bprat\OneDrive\Desktop\DL\pexels-ezz7-691583.jpg',target_size=(224,224))
+img=image.img_to_array(img)
+img=np.expand_dims(img,axis=0)
+result=model.predict(img)
+print(result)
+
+from tensorflow.keras.preprocessing import image
+img=image.load_img(r'C:\Users\bprat\OneDrive\Desktop\DL\dog.jpeg',target_size=(224,224))
+img=image.img_to_array(img)
+img=np.expand_dims(img,axis=0)
+result=model.predict(img)
+print(result)
+
+predicted_class = np.argmax(result)  # This will give the index of the class with the highest probability
+print(f"Predicted class index: {predicted_class}")
+
+if(predicted_class==0):
+    print("It is Cat")
+else:
+    print("It is Dog")
+
+model.save('my_model.h5')
+
+from tensorflow.keras.models import load_model
+
+model1= load_model(r'C:\Users\bprat\OneDrive\Desktop\DL\my_model.h5')
+
+img = image.load_img(r'C:\Users\bprat\OneDrive\Desktop\DL\dog.jpeg', target_size=(224, 224))
+img = image.img_to_array(img)
+img = np.expand_dims(img, axis=0)
+
+result = model1.predict(img)
+print(result)
+
